@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head> 
+<link rel="manifest" href="/DiariodeobrasRiodejaneiro/manifest.webmanifest">
+<meta name="theme-color" content="#0ea5e9">
+<link rel="apple-touch-icon" href="/DiariodeobrasRiodejaneiro/icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Registro Profissional de Ocorrências — PDF + IA</title>
+  <meta name="description" content="Sistema avançado para registro de ocorrências com PDF profissional, até 4 fotos em grid, correção ortográfica inteligente e análise de IA para textos mais claros." />
+  <style>
+    :root{ --bg:#f6fbff; --paper:#fff; --ink:#0f172a; --muted:#667085; --line:#e5eef7; --brand:#0ea5e9; --ok:#16a34a; --warn:#f59e0b; --bad:#ef4444; --radius:16px }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif}
+    .wrap{max-width:940px;margin:0 auto;padding:16px;height:100%;display:grid;grid-template-rows:auto 1fr auto;gap:12px}
+    header{display:flex;align-items:center;justify-content:space-between;gap:8px}
+    h1{margin:0;font-size:20px}
+    .stamp{font-size:12px;color:var(--muted)}
+    .card{background:var(--paper);border:2px solid var(--line);border-radius:var(--radius);box-shadow:0 16px 40px rgba(0,0,0,.06)}
+    .form{padding:12px;display:grid;gap:10px;overflow:auto;max-height:calc(100vh - 190px)}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    @media (max-width:760px){.row{grid-template-columns:1fr}}
+    label{display:grid;gap:6px;font-size:12px;color:var(--muted)}
+    input,select,textarea{border:2px solid var(--line);border-radius:10px;padding:10px;font-size:14px;transition:border-color 0.2s ease}
+    input:focus,select:focus,textarea:focus{outline:none;border-color:var(--brand)}
+    textarea{min-height:110px;resize:vertical;overflow:auto}
+    .help{font-size:11px;color:var(--muted)}
+    .actions{display:flex;flex-wrap:wrap;gap:8px;padding:10px}
+    .btn{appearance:none;border:2px solid var(--line);background:var(--paper);border-radius:999px;padding:10px 14px;font-weight:700;color:var(--ink);cursor:pointer;transition:all 0.2s ease}
+    .btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,0.15)}
+    .btn:active{transform:translateY(1px)}
+    .btn:disabled{opacity:0.6;cursor:not-allowed;transform:none}
+    .primary{background:linear-gradient(180deg,#7dd3fc,#38bdf8);border-color:transparent;color:#063a59}
+    .success{background:linear-gradient(180deg,#86efac,#4ade80);border-color:transparent;color:#14532d}
+    .warning{background:linear-gradient(180deg,#fde047,#facc15);border-color:transparent;color:#713f12}
+    .preview{padding:10px;white-space:pre-wrap;font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;background:#f8fbff;border-top:2px dashed var(--line);max-height:220px;overflow:auto}
+    
+    /* Grid de fotos aprimorado */
+    .photo-grid{display:grid;gap:12px;margin-top:10px;padding:12px;background:#f8fbff;border-radius:12px;border:2px dashed var(--line)}
+    .photo-grid.grid-1{grid-template-columns:1fr;max-width:300px}
+    .photo-grid.grid-2{grid-template-columns:1fr 1fr;max-width:400px}
+    .photo-grid.grid-3{grid-template-columns:1fr 1fr;max-width:400px}
+    .photo-grid.grid-3 .thumb:first-child{grid-column:1/-1}
+    .photo-grid.grid-4{grid-template-columns:1fr 1fr;max-width:400px}
+    
+    .thumb{position:relative;border-radius:12px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.1);transition:transform 0.2s ease}
+    .thumb:hover{transform:scale(1.02)}
+    .thumb img{width:100%;height:120px;object-fit:cover;display:block}
+    .thumb button{position:absolute;top:8px;right:8px;border:none;background:rgba(239,68,68,0.9);color:#fff;border-radius:50%;width:28px;height:28px;cursor:pointer;font-weight:900;line-height:1;font-size:14px;backdrop-filter:blur(4px)}
+    .thumb button:hover{background:#ef4444;transform:scale(1.1)}
+    
+    .photo-counter{font-size:11px;color:var(--muted);margin-top:8px;text-align:center}
+    .opts{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+    footer{font-size:11px;color:var(--muted);padding:8px;text-align:center}
+    canvas{display:none}
+    .camBar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+    
+    /* Indicadores de status aprimorados */
+    .status-indicator{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:20px;font-size:11px;font-weight:600;margin-top:8px}
+    .status-indicator.checking{background:#fef3c7;color:#92400e;animation:pulse 2s infinite}
+    .status-indicator.corrected{background:#dcfce7;color:#166534}
+    .status-indicator.warning{background:#fee2e2;color:#991b1b}
+    .status-indicator.excellent{background:#dbeafe;color:#1e40af}
+    
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.7}}
+    
+    /* Painel de IA aprimorado */
+    .ai-panel{background:#f0f9ff;border:2px solid #bae6fd;border-radius:12px;padding:16px;margin-top:12px;display:none}
+    .ai-panel.show{display:block;animation:slideIn 0.3s ease}
+    .ai-panel h4{margin:0 0 12px 0;color:#0369a1;font-size:14px;display:flex;align-items:center;gap:8px}
+    .ai-panel .score{background:#0ea5e9;color:white;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:bold}
+    .ai-panel .suggestions{margin:12px 0}
+    .ai-panel .suggestion-item{background:white;padding:8px 12px;border-radius:8px;margin:6px 0;font-size:12px;color:#0c4a6e;border-left:3px solid #0ea5e9}
+    .suggestion-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+    .suggestion-actions button{padding:6px 12px;font-size:11px;border-radius:8px}
+    
+    @keyframes slideIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+    
+    /* Configurações de IA */
+    .ai-config{background:#fefce8;border:2px solid #fde047;border-radius:8px;padding:8px;margin-top:8px;font-size:11px}
+    .ai-config input{font-size:10px;padding:4px 6px;margin:0 4px;width:200px}
+    .ai-toggle{display:flex;align-items:center;gap:6px;margin-top:8px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>Registro Profissional de Ocorrências — PDF + IA</h1>
+        <div class="stamp">🕒 Data/hora (Brasília): <b id="ts"></b></div>
+      </div>
+      <div class="opts">
+        <label style="display:flex;gap:8px;align-items:center">
+          <input type="checkbox" id="chkPdf" checked> PDF profissional
+        </label>
+        <label style="display:flex;gap:8px;align-items:center">
+          <input type="checkbox" id="chkWhatsApp"> WhatsApp
+        </label>
+        <label style="display:flex;gap:8px;align-items:center">
+          <input type="checkbox" id="chkAI"> IA avançada
+        </label>
+        <button class="btn" id="btnClear">Limpar</button>
+      </div>
+    </header>
+
+    <section class="card">
+      <form id="form" class="form" novalidate>
+        <div class="row">
+          <label>Tipo de ocorrência
+            <select id="tipo" required>
+              <option value="" selected disabled>Selecione…</option>
+              <option>Extravios</option>
+              <option>Danos causados por terceiros</option>
+              <option>Entupimentos</option>
+              <option>Necessidade de reparo</option>
+              <option>Não conformidade</option>
+              <option>Acidente/Incidente</option>
+              <option>Segurança</option>
+              <option>Atraso de fornecedor</option>
+              <option>Falta de material</option>
+              <option>Outros</option>
+            </select>
+          </label>
+          <label id="lblOutro" style="display:none">Descrever (se "Outros")
+            <input id="outroTexto" placeholder="Ex.: vazamento em shaft do 12º andar" />
+          </label>
+        </div>
+
+        <div class="row">
+          <label>Bloco/Setor (livre — número ou local)
+            <input id="bloco" placeholder="Ex.: 2 | Embasamento | Áreas externas" list="blocosSug" />
+            <datalist id="blocosSug">
+              <option value="Bloco 1"></option>
+              <option value="Bloco 2"></option>
+              <option value="Bloco 3"></option>
+              <option value="Embasamento"></option>
+              <option value="Áreas externas"></option>
+            </datalist>
+          </label>
+          <label>Pavimento / Unidade (Apto/Loja)
+            <input id="pav" placeholder="Ex.: 12º / 1203" />
+          </label>
+        </div>
+
+        <div class="row">
+          <label>Local detalhado
+            <input id="local" placeholder="Ex.: banheiro social, shaft hidráulico, QDL" />
+          </label>
+          <label>Responsável/Equipe (opcional)
+            <input id="resp" placeholder="Ex.: Equipe Hidráulica — João" />
+          </label>
+        </div>
+
+        <label>Descrição objetiva (o que ocorreu?)
+          <textarea id="desc" placeholder="Explique em 2–3 linhas o que foi visto/aconteceu. A IA ajudará a melhorar a clareza e precisão técnica."></textarea>
+          
+          <div class="status-indicator checking" id="textStatus" style="display:none">
+            <span>🔍</span> <span id="statusText">Analisando texto...</span>
+          </div>
+          
+          <div class="ai-config" id="aiConfig" style="display:none">
+            <strong>🤖 Configuração da IA:</strong>
+            <input type="password" id="apiKey" placeholder="Chave da API OpenAI (opcional)" />
+            <div class="help">A IA avançada requer uma chave da API OpenAI. Sem ela, usaremos análise básica local.</div>
+          </div>
+          
+          <div class="ai-panel" id="aiPanel">
+            <h4>
+              <span>💡 Análise Inteligente</span>
+              <span class="score" id="textScore">-</span>
+            </h4>
+            <div class="suggestions" id="aiSuggestions"></div>
+            <div class="suggestion-actions">
+              <button type="button" class="btn success" id="btnApplyAI">✨ Aplicar Melhorias</button>
+              <button type="button" class="btn" id="btnDismissAI">Dispensar</button>
+              <button type="button" class="btn" id="btnReanalyze">🔄 Reanalisar</button>
+            </div>
+          </div>
+        </label>
+
+        <div class="row">
+          <label>Ação solicitada
+            <select id="acao">
+              <option>Vistoria</option>
+              <option>Reparo</option>
+              <option>Retorno administrativo</option>
+              <option>Compra de material</option>
+              <option>Fechamento de área</option>
+              <option>Outro</option>
+            </select>
+          </label>
+          <label>Prioridade
+            <select id="prio">
+              <option>Média</option>
+              <option>Alta</option>
+              <option>Crítica</option>
+              <option>Baixa</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="row">
+          <label>Prazo desejado (se houver)
+            <input type="date" id="prazo" />
+          </label>
+          <label>Telefone WhatsApp (DDD+Número)
+            <input id="fone" type="tel" inputmode="numeric" pattern="[0-9]{10,13}" placeholder="Ex.: 21999999999" />
+            <span class="help">Salvamos o último número usado neste dispositivo.</span>
+          </label>
+        </div>
+
+        <label>Anexos fotográficos (até 4 fotos em grid profissional)
+          <div class="camBar">
+            <button class="btn" type="button" id="btnCamera">📷 Tirar foto</button>
+            <button class="btn" type="button" id="btnGallery">🖼️ Galeria</button>
+            <input id="inputCamera" type="file" accept="image/*" capture="environment" hidden>
+            <input id="inputGallery" type="file" accept="image/*" multiple hidden>
+          </div>
+          <div class="photo-grid" id="photoGrid" style="display:none"></div>
+          <div class="photo-counter" id="photoCounter">Nenhuma foto selecionada</div>
+          <div class="help">Máximo de 4 fotos. Organizadas automaticamente em layout profissional no PDF.</div>
+        </label>
+
+        <div class="actions">
+          <button class="btn" type="button" id="btnPreview">👁️ Pré‑visualizar</button>
+          <button class="btn success" type="button" id="btnGeneratePdf">📄 Gerar PDF Profissional</button>
+          <button class="btn primary" type="submit" id="btnSend" style="display:none">📱 Enviar WhatsApp</button>
+          <button class="btn" type="button" id="btnCopy">📋 Copiar texto</button>
+        </div>
+
+        <div class="preview" id="preview" aria-live="polite"></div>
+      </form>
+    </section>
+
+    <footer>— <strong><em>Sistema Profissional de Gestão de Ocorrências</em></strong> —</footer>
+  </div>
+
+  <canvas id="cardCanvas" width="1080" height="1350"></canvas>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="pdf-generator.js"></script>
+  <script src="ai-assistant.js"></script>
+  <script>
+    // Configurações globais
+    const tz = 'America/Sao_Paulo';
+    function nowBr(){ const d = new Date(); return new Intl.DateTimeFormat('pt-BR',{timeZone:tz,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'}).format(d); }
+    function ymdBrParts(){ const d = new Date(); const z = new Intl.DateTimeFormat('en-CA',{timeZone:tz,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}).formatToParts(d); const g = Object.fromEntries(z.map(p=>[p.type,p.value])); return g; }
+    function makeRef(){ const g = ymdBrParts(); return `OC-${g.year}${g.month}${g.day}-${g.hour}${g.minute}`; }
+    function isoBrDate(d){ if(!d) return ''; const [y,m,da] = d.split('-'); return `${da}/${m}/${y}` }
+    function refreshStamp(){ document.getElementById('ts').textContent = nowBr(); }
+    setInterval(refreshStamp, 1000); refreshStamp();
+
+    // Elementos do DOM
+    const form = document.getElementById('form');
+    const tipo = document.getElementById('tipo');
+    const lblOutro = document.getElementById('lblOutro');
+    const outroTexto = document.getElementById('outroTexto');
+    const bloco = document.getElementById('bloco');
+    const pav = document.getElementById('pav');
+    const localDet = document.getElementById('local');
+    const resp = document.getElementById('resp');
+    const desc = document.getElementById('desc');
+    const acao = document.getElementById('acao');
+    const prio = document.getElementById('prio');
+    const prazo = document.getElementById('prazo');
+    const fone = document.getElementById('fone');
+    const photoGrid = document.getElementById('photoGrid');
+    const photoCounter = document.getElementById('photoCounter');
+    
+    // Checkboxes e configurações
+    const chkPdf = document.getElementById('chkPdf');
+    const chkWhatsApp = document.getElementById('chkWhatsApp');
+    const chkAI = document.getElementById('chkAI');
+    const apiKey = document.getElementById('apiKey');
+    const aiConfig = document.getElementById('aiConfig');
+    
+    // Botões
+    const btnCamera = document.getElementById('btnCamera');
+    const btnGallery = document.getElementById('btnGallery');
+    const inputCamera = document.getElementById('inputCamera');
+    const inputGallery = document.getElementById('inputGallery');
+    const btnGeneratePdf = document.getElementById('btnGeneratePdf');
+    const btnSend = document.getElementById('btnSend');
+    
+    // Elementos de IA
+    const textStatus = document.getElementById('textStatus');
+    const statusText = document.getElementById('statusText');
+    const aiPanel = document.getElementById('aiPanel');
+    const aiSuggestions = document.getElementById('aiSuggestions');
+    const textScore = document.getElementById('textScore');
+    const btnApplyAI = document.getElementById('btnApplyAI');
+    const btnDismissAI = document.getElementById('btnDismissAI');
+    const btnReanalyze = document.getElementById('btnReanalyze');
+
+    // Inicializar assistente de IA
+    const aiAssistant = new AITextAssistant();
+    let currentAnalysis = null;
+    let analysisTimeout = null;
+
+    // Controle de visibilidade
+    chkWhatsApp.addEventListener('change', () => {
+      btnSend.style.display = chkWhatsApp.checked ? 'block' : 'none';
+    });
+
+    chkAI.addEventListener('change', () => {
+      aiConfig.style.display = chkAI.checked ? 'block' : 'none';
+      if (chkAI.checked && desc.value.trim().length > 10) {
+        analyzeText();
+      } else {
+        hideAIPanel();
+      }
+    });
+
+    // Configuração da API
+    apiKey.addEventListener('input', () => {
+      if (apiKey.value.trim()) {
+        aiAssistant.setApiKey(apiKey.value.trim());
+        localStorage.setItem('openai_key', apiKey.value.trim());
+      }
+    });
+
+    // Carregar chave salva
+    const savedKey = localStorage.getItem('openai_key');
+    if (savedKey) {
+      apiKey.value = savedKey;
+      aiAssistant.setApiKey(savedKey);
+    }
+
+    // Controle de fotos
+    let photosState = [];
+    const fileKey = f => `${f.name}|${f.size}|${f.lastModified}`;
+
+    btnCamera.addEventListener('click', () => inputCamera.click());
+    btnGallery.addEventListener('click', () => inputGallery.click());
+
+    function addPhotos(list) {
+      for (const f of list) {
+        if (photosState.length >= 4) {
+          alert('Máximo de 4 fotos permitidas.');
+          break;
+        }
+        const id = fileKey(f);
+        if (photosState.some(x => x.id === id)) continue;
+        const url = URL.createObjectURL(f);
+        photosState.push({ id, file: f, url });
+      }
+      updatePhotoGrid();
+    }
+
+    function removePhoto(id) {
+      const index = photosState.findIndex(x => x.id === id);
+      if (index > -1) {
+        URL.revokeObjectURL(photosState[index].url);
+        photosState.splice(index, 1);
+        updatePhotoGrid();
+      }
+    }
+
+    function updatePhotoGrid() {
+      const count = photosState.length;
+      photoCounter.textContent = count === 0 ? 'Nenhuma foto selecionada' :
+        count === 1 ? '1 foto selecionada' : `${count} fotos selecionadas`;
+
+      if (count === 0) {
+        photoGrid.style.display = 'none';
+        return;
+      }
+
+      photoGrid.style.display = 'grid';
+      photoGrid.className = `photo-grid grid-${count}`;
+      photoGrid.innerHTML = '';
+
+      photosState.forEach(({ id, url, file }) => {
+        const thumb = document.createElement('div');
+        thumb.className = 'thumb';
+        thumb.innerHTML = `
+          <img src="${url}" alt="${file.name}">
+          <button title="Remover foto" onclick="removePhoto('${id}')">×</button>
+        `;
+        photoGrid.appendChild(thumb);
+      });
+    }
+
+    window.removePhoto = removePhoto;
+
+    inputCamera.addEventListener('change', e => {
+      const list = Array.from(e.target.files || []);
+      addPhotos(list);
+      inputCamera.value = '';
+    });
+
+    inputGallery.addEventListener('change', e => {
+      const list = Array.from(e.target.files || []);
+      addPhotos(list);
+      inputGallery.value = '';
+    });
+
+    // Mostrar/ocultar campo "Outros"
+    tipo.addEventListener('change', () => {
+      lblOutro.style.display = tipo.value === 'Outros' ? 'block' : 'none';
+    });
+
+    // Análise de texto com IA
+    desc.addEventListener('input', () => {
+      clearTimeout(analysisTimeout);
+      if (chkAI.checked && desc.value.trim().length > 10) {
+        showAnalyzing();
+        analysisTimeout = setTimeout(analyzeText, 2000);
+      } else {
+        hideAIPanel();
+      }
+    });
+
+    function showAnalyzing() {
+      textStatus.style.display = 'inline-flex';
+      textStatus.className = 'status-indicator checking';
+      statusText.textContent = 'Analisando texto...';
+      aiPanel.classList.remove('show');
+    }
+
+    function hideAIPanel() {
+      textStatus.style.display = 'none';
+      aiPanel.classList.remove('show');
+    }
+
+    async function analyzeText() {
+      if (!chkAI.checked || desc.value.trim().length < 10) return;
+
+      try {
+        const context = {
+          tipo: tipo.value === 'Outros' ? outroTexto.value : tipo.value
+        };
+
+        currentAnalysis = await aiAssistant.analyzeText(desc.value.trim(), context);
+        displayAnalysis(currentAnalysis);
+      } catch (error) {
+        console.error('Erro na análise:', error);
+        showError('Erro na análise de texto');
+      }
+    }
+
+    function displayAnalysis(analysis) {
+      const score = analysis.overallScore;
+      
+      // Atualizar status
+      if (score >= 8) {
+        textStatus.className = 'status-indicator excellent';
+        statusText.textContent = 'Texto excelente!';
+      } else if (score >= 6) {
+        textStatus.className = 'status-indicator corrected';
+        statusText.textContent = 'Texto bom, com sugestões';
+      } else {
+        textStatus.className = 'status-indicator warning';
+        statusText.textContent = 'Texto precisa de melhorias';
+      }
+
+      // Atualizar pontuação
+      textScore.textContent = score.toFixed(1);
+
+      // Gerar sugestões
+      const suggestions = aiAssistant.generateSuggestions(analysis);
+      aiSuggestions.innerHTML = '';
+
+      if (suggestions.length > 0) {
+        suggestions.forEach(suggestion => {
+          const div = document.createElement('div');
+          div.className = 'suggestion-item';
+          div.textContent = suggestion;
+          aiSuggestions.appendChild(div);
+        });
+        aiPanel.classList.add('show');
+      } else {
+        aiPanel.classList.remove('show');
+      }
+    }
+
+    function showError(message) {
+      textStatus.className = 'status-indicator warning';
+      statusText.textContent = message;
+    }
+
+    // Botões de IA
+    btnApplyAI.addEventListener('click', () => {
+      if (currentAnalysis) {
+        const correctedText = aiAssistant.applyCorrections(desc.value, currentAnalysis);
+        desc.value = correctedText;
+        aiPanel.classList.remove('show');
+        setTimeout(analyzeText, 500);
+      }
+    });
+
+    btnDismissAI.addEventListener('click', () => {
+      aiPanel.classList.remove('show');
+    });
+
+    btnReanalyze.addEventListener('click', analyzeText);
+
+    // Mensagem para WhatsApp
+    function buildMessage() {
+      const ref = makeRef();
+      const dataHora = nowBr();
+      const t = tipo.value || '(sem tipo)';
+      const t2 = (t === 'Outros' ? (outroTexto.value.trim() || '(descrever)') : t);
+      const prazoFmt = (prazo.value ? isoBrDate(prazo.value) : '-');
+      const anexos = photosState.length;
+      const linhas = [
+        `*🏗️ OCORRÊNCIA DE OBRA*  •  *Ref:* ${ref}`,
+        `━━━━━━━━━━━━━━━━━━━━`,
+        `*Tipo:* ${t2}`,
+        `*📍 Bloco/Setor:* ${bloco.value || '-'}`,
+        `*🏢 Pav/Unidade:* ${pav.value || '-'}`,
+        `*🧭 Local:* ${localDet.value || '-'}`,
+        `*📝 Descrição:* ${desc.value.trim() || '-'}`,
+        `*🛠️ Ação solicitada:* ${acao.value}`,
+        `*⚡ Prioridade:* ${prio.value}`,
+        `*📅 Prazo desejado:* ${prazoFmt}`,
+        `*👷 Responsável/Equipe:* ${resp.value || '-'}`,
+        `*🕒 Data/Hora (Brasília):* ${dataHora}`,
+        anexos > 0 ? `*📎 Anexos:* ${anexos} foto(s)` : null,
+        `━━━━━━━━━━━━━━━━━━━━`,
+        `*_*Sistema Profissional de Gestão*_*`
+      ].filter(Boolean);
+      return linhas.join('\n');
+    }
+
+    // Geração de PDF
+    async function generatePDF() {
+      try {
+        btnGeneratePdf.disabled = true;
+        btnGeneratePdf.textContent = '⏳ Gerando PDF...';
+
+        const generator = new ProfessionalPDFGenerator();
+        const ref = makeRef();
+
+        const formData = {
+          reference: ref,
+          tipo: tipo.value === 'Outros' ? (outroTexto.value.trim() || '(descrever)') : (tipo.value || '(sem tipo)'),
+          bloco: bloco.value,
+          pavimento: pav.value,
+          local: localDet.value,
+          descricao: desc.value.trim(),
+          acao: acao.value,
+          prioridade: prio.value,
+          prazo: prazo.value ? isoBrDate(prazo.value) : '-',
+          responsavel: resp.value
+        };
+
+        const pdf = await generator.generateReport(formData, photosState);
+        const filename = `Relatorio_Profissional_${ref}.pdf`;
+        pdf.save(filename);
+
+        alert(`✅ PDF "${filename}" gerado com sucesso!\n\n📊 Relatório profissional com layout otimizado\n📸 ${photosState.length} foto(s) organizadas em grid\n🤖 Texto ${currentAnalysis ? 'analisado pela IA' : 'verificado'}`);
+
+      } catch (error) {
+        console.error('Erro ao gerar PDF:', error);
+        alert('❌ Erro ao gerar PDF. Verifique os dados e tente novamente.');
+      } finally {
+        btnGeneratePdf.disabled = false;
+        btnGeneratePdf.textContent = '📄 Gerar PDF Profissional';
+      }
+    }
+
+    // Event listeners
+    const preview = document.getElementById('preview');
+    document.getElementById('btnPreview').addEventListener('click', () => preview.textContent = buildMessage());
+    document.getElementById('btnCopy').addEventListener('click', () => {
+      const text = buildMessage();
+      navigator.clipboard?.writeText(text).then(() => {
+        preview.textContent = text + "\n\n📋 (texto copiado para área de transferência)";
+      });
+    });
+
+    btnGeneratePdf.addEventListener('click', generatePDF);
+
+    document.getElementById('btnClear').addEventListener('click', () => {
+      if (confirm('Limpar todos os dados do formulário?')) {
+        form.reset();
+        photosState.forEach(p => URL.revokeObjectURL(p.url));
+        photosState = [];
+        updatePhotoGrid();
+        preview.textContent = '';
+        hideAIPanel();
+        currentAnalysis = null;
+      }
+    });
+
+    // WhatsApp
+    function openWhatsWithText(text, number) {
+      const encoded = encodeURIComponent(text);
+      const num = (number || '').replace(/\D/g, '');
+      const url = num ? `https://wa.me/${num}?text=${encoded}` : `https://wa.me/?text=${encoded}`;
+      window.open(url, '_blank');
+    }
+
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      if (chkWhatsApp.checked) {
+        const message = buildMessage();
+        const phone = fone.value.replace(/\D/g, '');
+        openWhatsWithText(message, phone);
+      }
+    });
+
+    // Salvar telefone
+    fone.addEventListener('input', () => {
+      localStorage.setItem('lastPhone', fone.value);
+    });
+
+    const savedPhone = localStorage.getItem('lastPhone');
+    if (savedPhone) fone.value = savedPhone;
+  </script>
+</body>
+</html>
