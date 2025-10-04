@@ -241,7 +241,7 @@
   <canvas id="cardCanvas" width="1080" height="1350"></canvas>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="pdf-generator.js"></script>
+  <script src="pdf-generator-system.js"></script>
   <script src="ai-assistant.js"></script>
   <script>
     // Configurações globais
@@ -532,7 +532,7 @@
         btnGeneratePdf.disabled = true;
         btnGeneratePdf.textContent = '⏳ Gerando PDF...';
 
-        const generator = new ProfessionalPDFGenerator();
+        const generator = new SystemEngenhariaPDFGenerator();
         const ref = makeRef();
 
         const formData = {
@@ -552,7 +552,14 @@
         const filename = `Relatorio_Profissional_${ref}.pdf`;
         pdf.save(filename);
 
-        alert(`✅ PDF "${filename}" gerado com sucesso!\n\n📊 Relatório profissional com layout otimizado\n📸 ${photosState.length} foto(s) organizadas em grid\n🤖 Texto ${currentAnalysis ? 'analisado pela IA' : 'verificado'}`);
+        // Mostrar opção de compartilhar via WhatsApp automaticamente
+        const shareViaWhatsApp = confirm(`✅ PDF "${filename}" gerado com sucesso!\n\n📊 Relatório profissional com layout otimizado\n📸 ${photosState.length} foto(s) organizadas em grid\n🤖 Texto ${currentAnalysis ? 'analisado pela IA' : 'verificado'}\n\n📱 Deseja compartilhar o resumo via WhatsApp agora?`);
+        
+        if (shareViaWhatsApp) {
+          const message = buildMessage();
+          const phone = fone.value.replace(/\D/g, '');
+          openWhatsWithText(message, phone);
+        }
 
       } catch (error) {
         console.error('Erro ao gerar PDF:', error);
@@ -614,3 +621,4 @@
   </script>
 </body>
 </html>
+
