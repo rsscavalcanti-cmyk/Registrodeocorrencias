@@ -1,32 +1,69 @@
 /**
  * Gerador de PDF Profissional para Relatórios de Ocorrência
- * Versão aprimorada com suporte a múltiplas fotos em grid
+ * Versão System Engenharia - Layout técnico e conciso em 1 página
  */
 
-class ProfessionalPDFGenerator {
+class SystemEngenhariaPDFGenerator {
   constructor() {
     this.pageWidth = 210; // A4 width in mm
     this.pageHeight = 297; // A4 height in mm
-    this.margin = 20;
+    this.margin = 15;
     this.contentWidth = this.pageWidth - 2 * this.margin;
+    
+    // Paleta de cores da System Engenharia
     this.colors = {
-      primary: [14, 165, 233],
-      secondary: [100, 116, 139],
-      text: [15, 23, 42],
-      lightGray: [248, 250, 252],
-      border: [226, 232, 240]
+      primary: [0, 123, 255],      // Azul principal #007bff
+      secondary: [40, 167, 69],    // Verde #28a745
+      text: [51, 51, 51],          // Cinza escuro #333333
+      lightGray: [248, 249, 250],  // Cinza claro #f8f9fa
+      border: [222, 226, 230],     // Borda #dee2e6
+      white: [255, 255, 255]       // Branco
     };
+    
+    // Logo da System Engenharia (base64 será carregado dinamicamente)
+    this.logoBase64 = null;
+  }
+
+  async loadLogo() {
+    try {
+      // Tentar carregar o logo da System Engenharia
+      const img = new Image();
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      
+      await new Promise((resolve, reject) => {
+        img.onload = () => {
+          canvas.width = 200;
+          canvas.height = 50;
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          this.logoBase64 = canvas.toDataURL('image/png');
+          resolve();
+        };
+        img.onerror = () => {
+          console.warn('Logo não encontrado, usando texto alternativo');
+          resolve();
+        };
+        img.src = 'system_engenharia_logo.png';
+      });
+    } catch (error) {
+      console.warn('Erro ao carregar logo:', error);
+    }
   }
 
   async generateReport(formData, photos = []) {
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF('p', 'mm', 'a4');
     
+    // Carregar logo antes de gerar o PDF
+    await this.loadLogo();
+    
     let currentY = this.addHeader(pdf, formData.reference);
-    currentY = this.addFormFields(pdf, formData, currentY);
+    currentY = this.addFormFieldsCompact(pdf, formData, currentY);
     
     if (photos.length > 0) {
-      currentY = await this.addPhotosSection(pdf, photos, currentY);
+      currentY = await this.addPhotosCompact(pdf, photos, currentY);
     }
     
     this.addFooter(pdf);
@@ -35,31 +72,36 @@ class ProfessionalPDFGenerator {
   }
 
   addHeader(pdf, reference) {
-    // Cabeçalho com gradiente simulado
+    // Cabeçalho com cores da System Engenharia
     pdf.setFillColor(...this.colors.primary);
-    pdf.rect(0, 0, this.pageWidth, 45, 'F');
+    pdf.rect(0, 0, this.pageWidth, 35, 'F');
     
-    // Adicionar uma faixa mais clara para simular gradiente
-    pdf.setFillColor(56, 189, 248);
-    pdf.rect(0, 0, this.pageWidth, 25, 'F');
+    // Logo da System Engenharia (se disponível)
+    if (this.logoBase64) {
+      try {
+        pdf.addImage(this.logoBase64, 'PNG', this.margin, 8, 40, 10);
+      } catch (error) {
+        console.warn('Erro ao adicionar logo:', error);
+      }
+    } else {
+      // Texto alternativo se logo não estiver disponível
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('SYSTEM ENGENHARIA', this.margin, 15);
+    }
     
     // Título principal
     pdf.setTextColor(255, 255, 255);
-    pdf.setFontSize(22);
+    pdf.setFontSize(18);
     pdf.setFont('helvetica', 'bold');
-    pdf.text('RELATÓRIO DE OCORRÊNCIA', this.margin, 20);
+    pdf.text('RELATÓRIO TÉCNICO DE OCORRÊNCIA', this.margin + 50, 15);
     
-    // Subtítulo
-    pdf.setFontSize(14);
+    // Referência e data na mesma linha
+    pdf.setFontSize(10);
     pdf.setFont('helvetica', 'normal');
-    pdf.text('Sistema de Gestão de Obras', this.margin, 30);
+    pdf.text(`Ref: ${reference}`, this.margin, 28);
     
-    // Referência
-    pdf.setFontSize(12);
-    pdf.setFont('helvetica', 'bold');
-    pdf.text(`Ref: ${reference}`, this.margin, 40);
-    
-    // Data/hora no canto direito
     const now = new Date().toLocaleString('pt-BR', {
       timeZone: 'America/Sao_Paulo',
       year: 'numeric',
@@ -69,196 +111,215 @@ class ProfessionalPDFGenerator {
       minute: '2-digit'
     });
     
-    const dateText = `Gerado em: ${now}`;
+    const dateText = `Gerado: ${now}`;
     const dateWidth = pdf.getTextWidth(dateText);
-    pdf.setFontSize(10);
-    pdf.text(dateText, this.pageWidth - this.margin - dateWidth, 40);
+    pdf.text(dateText, this.pageWidth - this.margin - dateWidth, 28);
     
-    return 60; // Retorna posição Y após o cabeçalho
+    return 45; // Retorna posição Y após o cabeçalho
   }
 
-  addFormFields(pdf, data, startY) {
+  addFormFieldsCompact(pdf, data, startY) {
     pdf.setTextColor(...this.colors.text);
     let currentY = startY;
-    const lineHeight = 8;
-    const sectionSpacing = 12;
+    const lineHeight = 6;
+    const sectionSpacing = 8;
     
-    // Seção: Identificação da Ocorrência
-    currentY = this.addSectionTitle(pdf, 'IDENTIFICAÇÃO DA OCORRÊNCIA', currentY);
-    currentY += 5;
+    // Layout em duas colunas para economizar espaço
+    const colWidth = (this.contentWidth - 10) / 2;
     
-    currentY = this.addField(pdf, 'Tipo de Ocorrência', data.tipo, currentY, true);
-    currentY = this.addField(pdf, 'Bloco/Setor', data.bloco, currentY);
-    currentY = this.addField(pdf, 'Pavimento/Unidade', data.pavimento, currentY);
-    currentY = this.addField(pdf, 'Local Detalhado', data.local, currentY);
+    // Seção: Identificação (compacta)
+    currentY = this.addSectionTitleCompact(pdf, 'IDENTIFICAÇÃO DA OCORRÊNCIA', currentY);
+    currentY += 3;
     
+    // Primeira linha: Tipo e Bloco
+    currentY = this.addFieldInline(pdf, 'Tipo', data.tipo, this.margin, currentY, colWidth);
+    this.addFieldInline(pdf, 'Bloco/Setor', data.bloco, this.margin + colWidth + 10, currentY, colWidth);
+    currentY += lineHeight;
+    
+    // Segunda linha: Pavimento e Local
+    currentY = this.addFieldInline(pdf, 'Pavimento', data.pavimento, this.margin, currentY, colWidth);
+    this.addFieldInline(pdf, 'Local', data.local, this.margin + colWidth + 10, currentY, colWidth);
+    currentY += lineHeight + 3;
+    
+    // Descrição (linha completa)
+    currentY = this.addFieldFullWidth(pdf, 'Descrição', data.descricao, currentY);
     currentY += sectionSpacing;
     
-    // Seção: Descrição
-    currentY = this.addSectionTitle(pdf, 'DESCRIÇÃO DA OCORRÊNCIA', currentY);
-    currentY += 5;
+    // Seção: Ações (compacta)
+    currentY = this.addSectionTitleCompact(pdf, 'AÇÕES E PRIORIDADES', currentY);
+    currentY += 3;
     
-    currentY = this.addField(pdf, 'Descrição Objetiva', data.descricao, currentY, false, true);
+    // Primeira linha: Ação e Prioridade
+    currentY = this.addFieldInline(pdf, 'Ação', data.acao, this.margin, currentY, colWidth);
+    this.addFieldInline(pdf, 'Prioridade', data.prioridade, this.margin + colWidth + 10, currentY, colWidth);
+    currentY += lineHeight;
     
-    currentY += sectionSpacing;
+    // Segunda linha: Prazo e Responsável
+    currentY = this.addFieldInline(pdf, 'Prazo', data.prazo, this.margin, currentY, colWidth);
+    this.addFieldInline(pdf, 'Responsável', data.responsavel, this.margin + colWidth + 10, currentY, colWidth);
+    currentY += lineHeight + sectionSpacing;
     
-    // Seção: Ações e Prioridades
-    currentY = this.addSectionTitle(pdf, 'AÇÕES E PRIORIDADES', currentY);
-    currentY += 5;
-    
-    currentY = this.addField(pdf, 'Ação Solicitada', data.acao, currentY);
-    currentY = this.addField(pdf, 'Prioridade', data.prioridade, currentY, true);
-    currentY = this.addField(pdf, 'Prazo Desejado', data.prazo, currentY);
-    currentY = this.addField(pdf, 'Responsável/Equipe', data.responsavel, currentY);
-    
-    return currentY + sectionSpacing;
+    return currentY;
   }
 
-  addSectionTitle(pdf, title, y) {
-    // Fundo da seção
+  addSectionTitleCompact(pdf, title, y) {
+    // Fundo da seção mais compacto
     pdf.setFillColor(...this.colors.lightGray);
-    pdf.rect(this.margin - 5, y - 5, this.contentWidth + 10, 12, 'F');
+    pdf.rect(this.margin - 3, y - 3, this.contentWidth + 6, 8, 'F');
     
     // Borda esquerda colorida
     pdf.setFillColor(...this.colors.primary);
-    pdf.rect(this.margin - 5, y - 5, 3, 12, 'F');
+    pdf.rect(this.margin - 3, y - 3, 2, 8, 'F');
     
     // Texto do título
     pdf.setTextColor(...this.colors.primary);
-    pdf.setFontSize(12);
+    pdf.setFontSize(10);
     pdf.setFont('helvetica', 'bold');
-    pdf.text(title, this.margin, y + 2);
+    pdf.text(title, this.margin, y + 1);
     
-    return y + 15;
+    return y + 10;
   }
 
-  addField(pdf, label, value, y, isBold = false, isMultiline = false) {
-    const lineHeight = 6;
-    
+  addFieldInline(pdf, label, value, x, y, maxWidth) {
     // Label
     pdf.setTextColor(...this.colors.secondary);
-    pdf.setFontSize(9);
+    pdf.setFontSize(8);
     pdf.setFont('helvetica', 'bold');
-    pdf.text(label + ':', this.margin, y);
+    pdf.text(label + ':', x, y);
     
     // Value
     pdf.setTextColor(...this.colors.text);
-    pdf.setFontSize(10);
-    pdf.setFont('helvetica', isBold ? 'bold' : 'normal');
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'normal');
     
-    const labelWidth = pdf.getTextWidth(label + ': ') + 5;
+    const labelWidth = pdf.getTextWidth(label + ': ') + 2;
+    const valueWidth = maxWidth - labelWidth;
+    
+    let displayValue = value || '-';
+    
+    // Truncar se necessário
+    const maxChars = Math.floor(valueWidth / 2); // Aproximação
+    if (displayValue.length > maxChars) {
+      displayValue = displayValue.substring(0, maxChars - 3) + '...';
+    }
+    
+    pdf.text(displayValue, x + labelWidth, y);
+    
+    return y;
+  }
+
+  addFieldFullWidth(pdf, label, value, y) {
+    // Label
+    pdf.setTextColor(...this.colors.secondary);
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(label + ':', this.margin, y);
+    
+    // Value (pode ser multilinha)
+    pdf.setTextColor(...this.colors.text);
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'normal');
+    
+    const labelWidth = pdf.getTextWidth(label + ': ') + 2;
     const maxWidth = this.contentWidth - labelWidth;
     
     let displayValue = value || '-';
     
-    if (isMultiline && displayValue.length > 80) {
+    if (displayValue.length > 100) {
       const lines = pdf.splitTextToSize(displayValue, maxWidth);
-      pdf.text(lines, this.margin + labelWidth, y);
-      return y + (lines.length * lineHeight) + 4;
+      pdf.text(lines.slice(0, 3), this.margin + labelWidth, y); // Máximo 3 linhas
+      return y + (Math.min(lines.length, 3) * 4) + 2;
     } else {
-      // Truncar se muito longo para uma linha
-      if (displayValue.length > 60) {
-        displayValue = displayValue.substring(0, 57) + '...';
-      }
       pdf.text(displayValue, this.margin + labelWidth, y);
-      return y + lineHeight + 2;
+      return y + 6;
     }
   }
 
-  async addPhotosSection(pdf, photos, startY) {
+  async addPhotosCompact(pdf, photos, startY) {
     let currentY = startY;
     
-    // Verificar se precisa de nova página
-    if (currentY > this.pageHeight - 100) {
-      pdf.addPage();
-      currentY = this.margin;
+    // Verificar espaço disponível
+    const availableHeight = this.pageHeight - currentY - 30; // Reservar espaço para rodapé
+    
+    if (availableHeight < 60) {
+      // Não há espaço suficiente, adicionar apenas referência às fotos
+      currentY = this.addSectionTitleCompact(pdf, 'ANEXOS FOTOGRÁFICOS', currentY);
+      pdf.setTextColor(...this.colors.text);
+      pdf.setFontSize(8);
+      pdf.text(`${photos.length} foto(s) anexada(s) - Ver arquivo digital completo`, this.margin, currentY + 5);
+      return currentY + 15;
     }
     
-    // Título da seção de fotos
-    currentY = this.addSectionTitle(pdf, 'ANEXOS FOTOGRÁFICOS', currentY);
-    currentY += 10;
+    // Título da seção
+    currentY = this.addSectionTitleCompact(pdf, 'ANEXOS FOTOGRÁFICOS', currentY);
+    currentY += 5;
     
-    // Configurações do grid de fotos
-    const photosPerRow = 2;
-    const photoSpacing = 10;
-    const photoWidth = (this.contentWidth - photoSpacing) / photosPerRow;
-    const photoHeight = photoWidth * 0.75; // Proporção 4:3
+    // Grid compacto de fotos (2x2 ou 4x1 dependendo do espaço)
+    const maxPhotos = Math.min(photos.length, 4);
+    const photosPerRow = availableHeight > 80 ? 2 : 4;
+    const photoSpacing = 5;
+    const photoWidth = (this.contentWidth - (photosPerRow - 1) * photoSpacing) / photosPerRow;
+    const photoHeight = Math.min(photoWidth * 0.6, (availableHeight - 20) / 2); // Proporção mais compacta
     
-    for (let i = 0; i < photos.length; i++) {
+    for (let i = 0; i < maxPhotos; i++) {
       const photo = photos[i];
       const row = Math.floor(i / photosPerRow);
       const col = i % photosPerRow;
       
       const x = this.margin + col * (photoWidth + photoSpacing);
-      const y = currentY + row * (photoHeight + 25);
+      const y = currentY + row * (photoHeight + 15);
       
-      // Verificar se a foto cabe na página atual
-      if (y + photoHeight > this.pageHeight - this.margin) {
-        pdf.addPage();
-        currentY = this.margin + 20;
-        const newY = currentY + (row - Math.floor(i / photosPerRow)) * (photoHeight + 25);
-        await this.addSinglePhoto(pdf, photo, x, newY, photoWidth, photoHeight, i + 1);
-      } else {
-        await this.addSinglePhoto(pdf, photo, x, y, photoWidth, photoHeight, i + 1);
-      }
+      await this.addSinglePhotoCompact(pdf, photo, x, y, photoWidth, photoHeight, i + 1);
     }
     
-    // Calcular a posição Y final
-    const totalRows = Math.ceil(photos.length / photosPerRow);
-    return currentY + (totalRows * (photoHeight + 25)) + 10;
+    const totalRows = Math.ceil(maxPhotos / photosPerRow);
+    return currentY + (totalRows * (photoHeight + 15)) + 5;
   }
 
-  async addSinglePhoto(pdf, photo, x, y, width, height, photoNumber) {
+  async addSinglePhotoCompact(pdf, photo, x, y, width, height, photoNumber) {
     try {
-      // Criar canvas para redimensionar a imagem
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       const img = new Image();
       
       await new Promise((resolve, reject) => {
         img.onload = () => {
-          // Definir tamanho do canvas para qualidade otimizada
-          canvas.width = 600;
-          canvas.height = 450;
+          // Canvas menor para PDF compacto
+          canvas.width = 300;
+          canvas.height = 200;
           
-          // Desenhar imagem redimensionada
           ctx.fillStyle = '#ffffff';
           ctx.fillRect(0, 0, canvas.width, canvas.height);
           ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
           
-          // Converter para base64 com qualidade otimizada
-          const imgData = canvas.toDataURL('image/jpeg', 0.85);
+          const imgData = canvas.toDataURL('image/jpeg', 0.7); // Qualidade menor para economizar espaço
           
-          // Adicionar borda à foto
+          // Borda da foto
           pdf.setDrawColor(...this.colors.border);
-          pdf.setLineWidth(0.5);
+          pdf.setLineWidth(0.3);
           pdf.rect(x, y, width, height);
           
           // Adicionar imagem
-          pdf.addImage(imgData, 'JPEG', x + 1, y + 1, width - 2, height - 2);
+          pdf.addImage(imgData, 'JPEG', x + 0.5, y + 0.5, width - 1, height - 1);
           
-          // Adicionar legenda
+          // Legenda compacta
           pdf.setTextColor(...this.colors.secondary);
-          pdf.setFontSize(8);
+          pdf.setFontSize(6);
           pdf.setFont('helvetica', 'normal');
-          const caption = `Foto ${photoNumber}: ${photo.file.name}`;
-          const captionWidth = pdf.getTextWidth(caption);
-          const captionX = x + (width - captionWidth) / 2;
-          pdf.text(caption, captionX, y + height + 8);
+          const caption = `Foto ${photoNumber}`;
+          pdf.text(caption, x, y + height + 8);
           
           resolve();
         };
         
         img.onerror = () => {
-          // Fallback: adicionar placeholder de erro
+          // Placeholder de erro
           pdf.setFillColor(245, 245, 245);
           pdf.rect(x, y, width, height, 'F');
           
           pdf.setTextColor(...this.colors.secondary);
-          pdf.setFontSize(10);
-          pdf.setFont('helvetica', 'normal');
-          pdf.text('Erro ao carregar imagem', x + 10, y + height/2);
-          pdf.text(photo.file.name, x + 10, y + height/2 + 10);
+          pdf.setFontSize(6);
+          pdf.text('Erro', x + 5, y + height/2);
           
           resolve();
         };
@@ -269,46 +330,36 @@ class ProfessionalPDFGenerator {
     } catch (error) {
       console.error('Erro ao processar foto:', error);
       
-      // Fallback: adicionar placeholder
+      // Placeholder
       pdf.setFillColor(245, 245, 245);
       pdf.rect(x, y, width, height, 'F');
       
       pdf.setTextColor(...this.colors.secondary);
-      pdf.setFontSize(10);
-      pdf.text('Imagem não disponível', x + 10, y + height/2);
+      pdf.setFontSize(6);
+      pdf.text('N/A', x + 5, y + height/2);
     }
   }
 
   addFooter(pdf) {
-    const footerY = this.pageHeight - 15;
+    const footerY = this.pageHeight - 10;
     
     // Linha separadora
     pdf.setDrawColor(...this.colors.border);
-    pdf.setLineWidth(0.5);
+    pdf.setLineWidth(0.3);
     pdf.line(this.margin, footerY - 5, this.pageWidth - this.margin, footerY - 5);
     
     // Texto do rodapé
     pdf.setTextColor(...this.colors.secondary);
-    pdf.setFontSize(8);
+    pdf.setFontSize(7);
     pdf.setFont('helvetica', 'normal');
     
-    const footerText = 'Documento gerado automaticamente pelo Sistema de Registro de Ocorrências - Gestão Profissional';
+    const footerText = 'System Engenharia - Relatório Técnico Automatizado | www.systemengenharia.com.br';
     const textWidth = pdf.getTextWidth(footerText);
     const centerX = (this.pageWidth - textWidth) / 2;
     
     pdf.text(footerText, centerX, footerY);
-    
-    // Número da página (se houver múltiplas páginas)
-    const pageCount = pdf.internal.getNumberOfPages();
-    if (pageCount > 1) {
-      for (let i = 1; i <= pageCount; i++) {
-        pdf.setPage(i);
-        pdf.setFontSize(8);
-        pdf.text(`Página ${i} de ${pageCount}`, this.pageWidth - this.margin - 20, footerY);
-      }
-    }
   }
 }
 
 // Exportar para uso global
-window.ProfessionalPDFGenerator = ProfessionalPDFGenerator;
+window.SystemEngenhariaPDFGenerator = SystemEngenhariaPDFGenerator;
